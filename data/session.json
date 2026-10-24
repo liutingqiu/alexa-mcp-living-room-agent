@@ -1,0 +1,253 @@
+[
+  {
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-06-18",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "demo-client",
+        "version": "1.0.0"
+      }
+    },
+    "status": 200,
+    "durationMs": 18,
+    "result": {
+      "protocolVersion": "2025-06-18",
+      "serverInfo": {
+        "name": "alexa-plus-living-room",
+        "version": "2.0.0"
+      },
+      "capabilities": {
+        "tools": {
+          "listChanged": false
+        }
+      },
+      "instructions": "Living room orchestration tools. Device adapter: contract-device"
+    },
+    "error": null
+  },
+  {
+    "id": 2,
+    "method": "tools/list",
+    "params": {},
+    "status": 200,
+    "durationMs": 5,
+    "result": {
+      "tools": [
+        {
+          "name": "ring_get_doorbell_feed",
+          "description": "Return the current state of a doorbell device from the active adapter.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "deviceId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "deviceId"
+            ]
+          }
+        },
+        {
+          "name": "firetv_display_heads_up_alert",
+          "description": "Send a picture-in-picture alert command to a Fire TV device.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "deviceId": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "deviceId",
+              "title",
+              "message"
+            ]
+          }
+        },
+        {
+          "name": "bee_wearable_get_biometrics",
+          "description": "Read biometric telemetry for a wearable device.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "deviceId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "deviceId"
+            ]
+          }
+        },
+        {
+          "name": "living_room_scene_apply",
+          "description": "Run one device event through the orchestrator and return the decision and actions.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "deviceId": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "motion",
+                  "doorbell",
+                  "biometric",
+                  "media"
+                ]
+              },
+              "payload": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "deviceId",
+              "kind"
+            ]
+          }
+        },
+        {
+          "name": "server_capabilities",
+          "description": "Report adapter name and whether it targets real vendor devices.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "server_capabilities",
+      "arguments": {}
+    },
+    "status": 200,
+    "durationMs": 19,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"adapter\":\"contract-device\",\"realDevices\":false}"
+        }
+      ],
+      "isError": false
+    },
+    "error": null
+  },
+  {
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "living_room_scene_apply",
+      "arguments": {
+        "deviceId": "media",
+        "kind": "media",
+        "payload": {
+          "state": "playing"
+        }
+      }
+    },
+    "status": 200,
+    "durationMs": 7,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"rule\":\"media.track_playback\",\"reason\":\"playback state changed to playing\",\"event\":{\"deviceId\":\"media\",\"kind\":\"media\",\"at\":1792848182630,\"payload\":{\"state\":\"playing\"}},\"actions\":[],\"durationMs\":0}"
+        }
+      ],
+      "isError": false
+    },
+    "error": null
+  },
+  {
+    "id": 5,
+    "method": "tools/call",
+    "params": {
+      "name": "living_room_scene_apply",
+      "arguments": {
+        "deviceId": "ring:front-door",
+        "kind": "doorbell",
+        "payload": {
+          "summary": "Package delivery"
+        }
+      }
+    },
+    "status": 200,
+    "durationMs": 17,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"rule\":\"doorbell.pause_and_overlay\",\"reason\":\"someone is at the door while media may be playing\",\"event\":{\"deviceId\":\"ring:front-door\",\"kind\":\"doorbell\",\"at\":1792848182647,\"payload\":{\"summary\":\"Package delivery\"}},\"actions\":[{\"deviceId\":\"firetv:living-room\",\"action\":\"pause\",\"ok\":true,\"detail\":{\"accepted\":true,\"deviceId\":\"firetv:living-room\",\"action\":\"pause\",\"params\":{},\"appliedAt\":1792848182647,\"source\":\"contract\"}},{\"deviceId\":\"firetv:living-room\",\"action\":\"show_pip\",\"ok\":true,\"detail\":{\"accepted\":true,\"deviceId\":\"firetv:living-room\",\"action\":\"show_pip\",\"params\":{\"title\":\"Front door\",\"message\":\"Package delivery\",\"pauseCurrentMedia\":true},\"appliedAt\":1792848182647,\"source\":\"contract\"}}],\"durationMs\":0}"
+        }
+      ],
+      "isError": false
+    },
+    "error": null
+  },
+  {
+    "id": 6,
+    "method": "tools/call",
+    "params": {
+      "name": "living_room_scene_apply",
+      "arguments": {
+        "deviceId": "bee:wearable-1",
+        "kind": "biometric",
+        "payload": {
+          "stress": 84
+        }
+      }
+    },
+    "status": 200,
+    "durationMs": 15,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"rule\":\"biometric.dim_lights\",\"reason\":\"reported stress 84 crosses the 70 threshold\",\"event\":{\"deviceId\":\"bee:wearable-1\",\"kind\":\"biometric\",\"at\":1792848182662,\"payload\":{\"stress\":84}},\"actions\":[{\"deviceId\":\"alexa:lights\",\"action\":\"set_level\",\"ok\":true,\"detail\":{\"accepted\":true,\"deviceId\":\"alexa:lights\",\"action\":\"set_level\",\"params\":{\"level\":40},\"appliedAt\":1792848182662,\"source\":\"contract\"}}],\"durationMs\":0}"
+        }
+      ],
+      "isError": false
+    },
+    "error": null
+  },
+  {
+    "id": 7,
+    "method": "tools/call",
+    "params": {
+      "name": "firetv_display_heads_up_alert",
+      "arguments": {
+        "deviceId": "firetv:living-room",
+        "title": "Motion",
+        "message": "Back garden"
+      }
+    },
+    "status": 200,
+    "durationMs": 4,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"accepted\":true,\"deviceId\":\"firetv:living-room\",\"action\":\"show_pip\",\"params\":{\"title\":\"Motion\",\"message\":\"Back garden\"},\"appliedAt\":1792848182666,\"source\":\"contract\"}"
+        }
+      ],
+      "isError": false
+    },
+    "error": null
+  }
+]

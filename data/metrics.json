@@ -1,0 +1,54 @@
+{
+  "adapter": "contract-device",
+  "realDevices": false,
+  "roundTrips": 7,
+  "tools": 5,
+  "protocolVersion": "2025-06-18",
+  "latencyMs": {
+    "p50": 15,
+    "max": 19
+  },
+  "decisions": [
+    {
+      "rule": "media.track_playback",
+      "reason": "playback state changed to playing",
+      "actions": [],
+      "durationMs": 0
+    },
+    {
+      "rule": "doorbell.pause_and_overlay",
+      "reason": "someone is at the door while media may be playing",
+      "actions": [
+        {
+          "deviceId": "firetv:living-room",
+          "action": "pause",
+          "ok": true
+        },
+        {
+          "deviceId": "firetv:living-room",
+          "action": "show_pip",
+          "ok": true
+        }
+      ],
+      "durationMs": 0
+    },
+    {
+      "rule": "biometric.dim_lights",
+      "reason": "reported stress 84 crosses the 70 threshold",
+      "actions": [
+        {
+          "deviceId": "alexa:lights",
+          "action": "set_level",
+          "ok": true
+        }
+      ],
+      "durationMs": 0
+    }
+  ],
+  "sceneState": {
+    "mediaPlaying": false,
+    "lightsLevel": 40,
+    "lastDoorbellAt": 1792848182647,
+    "lastStress": 84
+  }
+}

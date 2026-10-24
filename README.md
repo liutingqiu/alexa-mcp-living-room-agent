@@ -1,107 +1,49 @@
-# Alexa+ MCP Living Room Orchestration Studio 🏠✨
+# Living Room Orchestrator (MCP)
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/Tests-5%2F5%20Passed-brightgreen)](tests/alexa_mcp.test.js)
-[![Amazon Devpost](https://img.shields.io/badge/Amazon-Developer%20Hackathon%20%24138K-orange)](https://amazonappdev2026.devpost.com/)
-[![MCP Spec](https://img.shields.io/badge/MCP-Spec%202025--11--25-blue)](https://modelcontextprotocol.io/)
-[![Live Terminal](https://img.shields.io/badge/Live%20Terminal-GitHub%20Pages-success)](https://liutingqiu.github.io/alexa-mcp-living-room-agent/)
+MCP server over Streamable HTTP that turns device events into a recorded action sequence.
 
-**Self-Hosted Model Context Protocol (MCP Spec 2025-11-25 Streamable HTTP) Server uniting Amazon Alexa+, Fire TV (Vega OS), Ring Doorbell, and Bee Wearable AI into an Autonomous Living Room Mesh.**
+| | |
+| --- | --- |
+| Transport | `POST /mcp`, JSON-RPC 2.0, JSON or `text/event-stream` response |
+| Protocol | `initialize`, `tools/list`, `tools/call`, `ping`, notifications |
+| Tools | 5 (doorbell snapshot, Fire TV alert, biometrics, scene apply, capabilities) |
+| Session record | 7 round trips, p50 15 ms, 3 decisions, 5 tools |
+| Device layer | `contract-device` by default; `http-device` when partner credentials exist |
 
-Submitted to the **Build, Ship, Shape: Amazon Developer Hackathon ($138,000 Cash Pool)** on Devpost.
+Session record: https://liutingqiu.github.io/alexa-mcp-living-room-agent/  
+Report: [`docs/technical-report.md`](docs/technical-report.md)
 
----
-
-## 🌟 Overview
-
-For the first time, Fire TV, Alexa+, Ring, and Bee are open to developers in a single global hackathon.
-
-**Alexa+ MCP Living Room Studio** bridges these devices into a unified proactive intelligence mesh:
-1. **Self-Hosted MCP Server (Spec 2025-11-25):** Implements Streamable HTTP JSON-RPC 2.0 to expose home device capabilities directly to Alexa+.
-2. **Proactive Visitor Handling:** Pauses 4K media on Fire TV, displays a picture-in-picture (PiP) feed of the visitor from Ring Doorbell, and dims ambient lights.
-3. **Biofeedback Stress Reduction:** Ingests live telemetry from the user's Bee AI Wearable and dynamically softens living room ambiance.
-4. **Live Interactive Web Simulator:** Fully functional browser dashboard deployed on GitHub Pages.
-
----
-
-## 🌐 Live Interactive Studio
-
-Simulate the multi-device living room mesh and MCP tool calls online:  
-👉 **[https://liutingqiu.github.io/alexa-mcp-living-room-agent/](https://liutingqiu.github.io/alexa-mcp-living-room-agent/)**
-
----
-
-## 📦 Quick Start & Usage
+## Quick start
 
 ```bash
-git clone https://github.com/liutingqiu/alexa-mcp-living-room-agent.git
-cd alexa-mcp-living-room-agent
-npm install
-npm test
+npm install && npm run build
+npm start                                   # http://127.0.0.1:8790/mcp
+node scripts/demo-run.mjs runs/demo        # records a full session
+npm test                                   # 8 tests
 ```
 
-### TypeScript / ESM Example
+## What is real, what is not
 
-```typescript
-import { AlexaStreamableMCPServer } from 'alexa-mcp-living-room-agent';
+Real: the HTTP transport, JSON-RPC framing, SSE responses, session id header, error codes, the
+rule table, action dispatch, per-call timing, and the failure path when a device rejects a command.
 
-// 1. Initialize self-hosted MCP Server
-const server = new AlexaStreamableMCPServer();
+Not real: the devices. Alexa+, Ring and Bee have no public developer API, so `ContractDeviceAdapter`
+answers locally and `/health` plus the `server_capabilities` tool both report `realDevices: false`.
+Set `PARTNER_DEVICE_BASE_URL` and `PARTNER_DEVICE_TOKEN` to switch to `HttpDeviceAdapter`, which
+implements the real HTTP shape — bearer auth, `/v1/devices/:id`, `/v1/devices/:id/commands`, and an
+SSE event stream — against whatever endpoint a partner grant provides.
 
-// 2. Query available tools via MCP JSON-RPC 2.0
-const toolsResponse = await server.handleMCPRequest({
-  jsonrpc: '2.0',
-  id: 'init_01',
-  method: 'tools/list'
-});
-console.log('Available MCP Tools:', toolsResponse.result);
+The previous version of this repository listed tool schemas and returned hard-coded strings with a
+hand-written `liveFeedUrl`. It never opened a socket. This version does not claim to have contacted
+a device it cannot contact.
 
-// 3. Dispatch cross-device doorbell notification
-await server.handleMCPRequest({
-  jsonrpc: '2.0',
-  id: 'call_01',
-  method: 'tools/call',
-  params: {
-    name: 'firetv_display_heads_up_alert',
-    arguments: {
-      alertTitle: 'Ring Motion Detected',
-      message: 'Visitor at front porch',
-      pauseCurrentMedia: true
-    }
-  }
-});
+## Layout
+
 ```
-
----
-
-## 🧪 Automated Test Suite
-
-```bash
-node --test tests/alexa_mcp.test.js
+src/devices.ts            adapter interface, contract adapter, HTTP adapter, selectAdapter()
+src/orchestrator.ts       rule table over device events, action dispatch, per-decision timing
+src/server/mcp_server.ts  HTTP routing, JSON-RPC dispatch, SSE, error codes
+src/index.ts              start the server
+scripts/demo-run.mjs      drive a full session and save session.json + metrics.json
+tests/mcp.test.js         8 tests over real sockets
 ```
-
-Output:
-```text
-✔ 1. AlexaStreamableMCPServer advertises MCP spec 2025-11-25 tools (0.7ms)
-✔ 2. AlexaStreamableMCPServer dispatches Ring doorbell feed tool call (0.2ms)
-✔ 3. AlexaStreamableMCPServer overlays alert and pauses Fire TV playback (0.1ms)
-✔ 4. Cross-device orchestration responds to Ring motion event (0.2ms)
-✔ 5. Cross-device orchestration responds to Bee Wearable biometric stress spike (0.1ms)
-
-ℹ pass 5
-ℹ fail 0
-```
-
----
-
-## 📖 Hackathon Documentation
-
-Read the full project pitch deck, architectural rationale, and multi-device interaction matrix:  
-👉 **[PITCH_DECK.md](PITCH_DECK.md)**
-
----
-
-## 📄 License
-
-Released under the [MIT License](LICENSE).

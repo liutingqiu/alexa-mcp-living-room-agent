@@ -1,377 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amazon Alexa+ MCP Living Room Orchestration Studio 🏠✨ | Devpost Amazon Hackathon</title>
-  <meta name="description" content="Self-hosted MCP Server (Spec 2025-11-25 Streamable HTTP) connecting Alexa+, Fire TV, Ring Doorbell, and Bee Wearable AI into an autonomous living room agent.">
-  <style>
-    :root {
-      --bg: #090c15;
-      --card-bg: #111728;
-      --card-border: #1d2742;
-      --amazon-orange: #FF9900;
-      --amazon-blue: #146EB4;
-      --alexa-cyan: #00CAFF;
-      --secondary: #14F195;
-      --accent: #38bdf8;
-      --danger: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-
-    header {
-      background: linear-gradient(180deg, rgba(255, 153, 0, 0.18) 0%, rgba(9, 12, 21, 0) 100%);
-      padding: 2.5rem 2rem 1.5rem;
-      border-bottom: 1px solid var(--card-border);
-      text-align: center;
-    }
-
-    .badge {
-      display: inline-block;
-      background: rgba(255, 153, 0, 0.15);
-      color: var(--amazon-orange);
-      border: 1px solid rgba(255, 153, 0, 0.4);
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.75rem;
-    }
-
-    h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      background: linear-gradient(90deg, #ffffff 0%, var(--alexa-cyan) 50%, var(--amazon-orange) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-      font-size: 1.05rem;
-      color: var(--text-muted);
-      max-width: 780px;
-      margin: 0 auto 1.5rem;
-    }
-
-    .btn-group {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.65rem 1.25rem;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      border: none;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--amazon-orange) 0%, #e67e00 100%);
-      color: #000;
-      font-weight: 700;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(255, 153, 0, 0.4);
-    }
-
-    .btn-secondary {
-      background: var(--card-bg);
-      color: var(--alexa-cyan);
-      border: 1px solid var(--alexa-cyan);
-    }
-
-    .container {
-      max-width: 1250px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
-    }
-
-    /* Top Stats */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 1.25rem;
-    }
-
-    .stat-lbl {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    .stat-val {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: #fff;
-      margin-top: 0.25rem;
-    }
-
-    /* Main Grid */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    @media (max-width: 900px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .panel {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-    }
-
-    .panel-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      margin-bottom: 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .device-tile {
-      background: #070a14;
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 0.85rem 1rem;
-      margin-bottom: 0.75rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .device-name {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #fff;
-    }
-
-    .device-sub {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .device-badge {
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.25rem 0.6rem;
-      border-radius: 4px;
-    }
-
-    .badge-active { background: rgba(20, 241, 149, 0.15); color: var(--secondary); }
-    .badge-alert { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-
-    .log-box {
-      background: #05070e;
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 1rem;
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: var(--alexa-cyan);
-      min-height: 180px;
-      max-height: 250px;
-      overflow-y: auto;
-    }
-
-    footer {
-      border-top: 1px solid var(--card-border);
-      text-align: center;
-      padding: 2rem;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
-
-    footer a {
-      color: var(--amazon-orange);
-      text-decoration: none;
-    }
-  </style>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Living Room Orchestrator - MCP session record</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#050a0c;--panel:#0c161a;--line:#1c2f36;--ink:#e6f4f7;--muted:#84a3ad;--cy:#22d3ee;--ok:#34d399;--warn:#fbbf24}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1000px 500px at 80% -10%,#0d2b33 0%,var(--bg) 60%);color:var(--ink);font-family:"IBM Plex Mono",monospace;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding:32px 22px 70px}
+header{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:16px}
+h1{font-family:"Space Grotesk",sans-serif;font-size:clamp(21px,3vw,34px)}
+h1 em{color:var(--cy);font-style:normal}
+.eyebrow{color:var(--muted);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.sub{color:var(--muted);font-size:12px;margin-top:7px;max-width:600px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:22px}
+.stat{background:#08131a;padding:12px 14px}
+.stat .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-family:"Space Grotesk",sans-serif;font-size:20px;margin-top:2px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+@media(max-width:880px){.cols{grid-template-columns:1fr}}
+.panel{background:linear-gradient(180deg,rgba(15,30,36,.95),rgba(7,14,18,.96));border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel h2{font-family:"Space Grotesk",sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+td,th{padding:7px 13px;border-bottom:1px solid rgba(28,47,54,.8);text-align:left}
+th{color:var(--muted);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.ok{color:var(--ok)}.fail{color:var(--warn)}
+.rule{color:var(--cy);font-size:11.5px}
+.note{padding:12px 14px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}
+.note b{color:var(--ink)}
+pre{font-size:10.5px;padding:14px;color:#a9cdd6;overflow:auto;line-height:1.7}
+footer{margin-top:26px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:11px;display:flex;gap:16px}
+a{color:var(--cy);text-decoration:none}a:hover{text-decoration:underline}
+</style>
 </head>
 <body>
-
+<div class="wrap">
   <header>
-    <div class="badge">Devpost • Amazon Developer Hackathon ($138,000 Cash Pool)</div>
-    <h1>Alexa+ MCP Living Room Orchestration Studio 🏠✨</h1>
-    <p class="subtitle">Self-hosted Model Context Protocol (MCP Spec 2025-11-25) server uniting Alexa+, Fire TV, Ring Doorbell, and Bee Wearable AI into an autonomous living room intelligence mesh.</p>
-    <div class="btn-group">
-      <a href="https://github.com/liutingqiu/alexa-mcp-living-room-agent" target="_blank" class="btn btn-primary">
-        GitHub Repository
-      </a>
-      <a href="https://amazonappdev2026.devpost.com/" target="_blank" class="btn btn-secondary">
-        Amazon Developer Hackathon
-      </a>
+    <div>
+      <div class="eyebrow">MCP &middot; Streamable HTTP &middot; JSON-RPC 2.0</div>
+      <h1>Living Room <em>Orchestrator</em></h1>
+      <p class="sub">Session record from a real server: initialize, tools/list and five tool calls over HTTP, with the decisions the rule table produced.</p>
     </div>
+    <div class="eyebrow" id="adapter">-</div>
   </header>
-
-  <div class="container">
-    <!-- Top Stats -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-lbl">Protocol Standard</div>
-        <div class="stat-val" style="font-size: 1.15rem; color: var(--alexa-cyan);">MCP Spec 2025-11-25 (Streamable HTTP)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-lbl">Connected Amazon Mesh</div>
-        <div class="stat-val" style="color: var(--secondary);">4 Devices Synchronized</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-lbl">Fire TV Playback State</div>
-        <div class="stat-val" style="font-size: 1.15rem; color: #fff;" id="valTvState">PLAYING_MOVIE (4K HDR)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-lbl">Bee AI Biometric Telemetry</div>
-        <div class="stat-val" style="font-size: 1.15rem; color: var(--amazon-orange);" id="valBiometric">74 BPM (Calm)</div>
-      </div>
+  <div class="stats" id="stats"></div>
+  <div class="cols">
+    <div class="panel">
+      <h2><span>Decisions</span><span id="dc">-</span></h2>
+      <table><tbody id="decisions"></tbody></table>
+      <div class="note">Rules are plain code in <b>src/orchestrator.ts</b>. The table above is the model: event in, actions out, each call recorded with its result.</div>
     </div>
-
-    <!-- Main Dual Panel -->
-    <div class="dashboard-grid">
-      <!-- Left: Connected Devices Grid & Trigger Simulator -->
-      <div class="panel">
-        <div class="panel-title">
-          <span>📱 Multi-Device Amazon Mesh</span>
-          <span style="font-size: 0.8rem; color: var(--secondary); font-weight: 600;">Autonomous Synergy</span>
-        </div>
-
-        <div class="device-tile">
-          <div>
-            <div class="device-name">1. Amazon Fire TV (Omni Series)</div>
-            <div class="device-sub">Vega OS • Picture-in-Picture heads-up alerts</div>
-          </div>
-          <span class="device-badge badge-active" id="badgeTv">PLAYING</span>
-        </div>
-
-        <div class="device-tile">
-          <div>
-            <div class="device-name">2. Ring Battery Doorbell Pro</div>
-            <div class="device-sub">3D Motion Detection &amp; 1536p HD Feed</div>
-          </div>
-          <span class="device-badge badge-alert" id="badgeRing">MONITORING</span>
-        </div>
-
-        <div class="device-tile">
-          <div>
-            <div class="device-name">3. Bee Wearable AI (Smart Band)</div>
-            <div class="device-sub">Continuous biometric heart rate &amp; stress tracking</div>
-          </div>
-          <span class="device-badge badge-active">CALM</span>
-        </div>
-
-        <div class="device-tile">
-          <div>
-            <div class="device-name">4. Alexa+ Ambient Light Controller</div>
-            <div class="device-sub">Adaptive color temperature &amp; focus illumination</div>
-          </div>
-          <span class="device-badge badge-active">WARM (#FFAA44)</span>
-        </div>
-
-        <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
-          <button class="btn btn-primary" style="flex: 1; font-size: 0.85rem;" onclick="triggerRingMotion()">
-            🚪 Simulate Ring Doorbell Motion
-          </button>
-          <button class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;" onclick="triggerBeeStress()">
-            ❤️ Simulate Bee Wearable Stress Spike
-          </button>
-        </div>
-      </div>
-
-      <!-- Right: Real-time MCP Tool Call & Orchestration Trace -->
-      <div class="panel">
-        <div class="panel-title">
-          <span>⚡ Real-Time MCP JSON-RPC 2.0 Audit Log</span>
-          <span style="font-size: 0.8rem; color: var(--alexa-cyan);">Streamable HTTP Stream</span>
-        </div>
-
-        <div class="log-box" id="terminalLog">
-          [Alexa+ MCP Server] Running on http://localhost:8080/mcp (Spec 2025-11-25).
-          <br>[Tools Exported] ring_get_doorbell_feed, firetv_display_heads_up_alert, bee_wearable_get_biometrics, alexa_set_ambient_lighting.
-        </div>
-      </div>
+    <div class="panel">
+      <h2>Round trips</h2>
+      <table><tbody id="rpc"></tbody></table>
+      <div class="note" id="scope"></div>
     </div>
   </div>
+  <div class="panel" style="margin-top:18px">
+    <h2>Run it</h2>
+    <pre>npm install &amp;&amp; npm run build
+npm start                      # contract adapter on :8790
+node scripts/demo-run.mjs runs/demo
 
+curl -s localhost:8790/mcp -H "content-type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</pre>
+    <div class="note">Set <b>PARTNER_DEVICE_BASE_URL</b> and <b>PARTNER_DEVICE_TOKEN</b> to switch to the HTTP device adapter. Without them the server reports <b>realDevices: false</b> and never pretends otherwise.</div>
+  </div>
   <footer>
-    <p>Submitted to the <strong>Amazon Developer Hackathon ($138,000 Cash Pool)</strong> on Devpost • Open Source MIT License</p>
-    <p style="margin-top: 0.25rem;">Repository: <a href="https://github.com/liutingqiu/alexa-mcp-living-room-agent" target="_blank">github.com/liutingqiu/alexa-mcp-living-room-agent</a></p>
+    <a href="https://github.com/liutingqiu/alexa-mcp-living-room-agent">repository</a>
+    <a href="docs/technical-report.md">technical report</a>
   </footer>
-
-  <script>
-    function triggerRingMotion() {
-      const log = document.getElementById('terminalLog');
-      const time = new Date().toLocaleTimeString();
-
-      log.innerHTML += `<br><br>[${time}] [Ring Event] Motion detected at Front Door (Confidence: 0.98)`;
-      log.innerHTML += `<br>[${time}] [Alexa+ MCP Client] Calling <code>firetv_display_heads_up_alert(pause=true)</code>`;
-
-      setTimeout(() => {
-        document.getElementById('valTvState').innerText = 'PAUSED_ALERT (Visitor PiP Overlay)';
-        document.getElementById('badgeTv').innerText = 'PAUSED';
-        document.getElementById('badgeTv').className = 'device-badge badge-alert';
-
-        log.innerHTML += `<br>[${time}] [Fire TV Vega OS] Paused 4K video. Rendered Ring camera PiP in top-right corner.`;
-        log.innerHTML += `<br>[${time}] [Alexa+ Lighting] Shifted ambient lighting to Alert Blue (#38BDF8) to highlight visitor.`;
-        log.scrollTop = log.scrollHeight;
-      }, 300);
-    }
-
-    function triggerBeeStress() {
-      const log = document.getElementById('terminalLog');
-      const time = new Date().toLocaleTimeString();
-
-      log.innerHTML += `<br><br>[${time}] [Bee Wearable Event] Heart rate surge detected: 125 BPM (Stress: ELEVATED)`;
-      log.innerHTML += `<br>[${time}] [Alexa+ MCP Client] Calling <code>alexa_set_ambient_lighting(color="#14F195", brightness=40)</code>`;
-
-      setTimeout(() => {
-        document.getElementById('valBiometric').innerText = '125 BPM (Elevated Stress)';
-        log.innerHTML += `<br>[${time}] [Living Room Agent] Executed biofeedback response: Softened ambient lights to calm emerald green.`;
-        log.scrollTop = log.scrollHeight;
-      }, 300);
-    }
-  </script>
+</div>
+<script>
+async function boot(){
+  var m={},s=[];
+  try{m=await (await fetch("data/metrics.json")).json();}catch(e){}
+  try{s=await (await fetch("data/session.json")).json();}catch(e){}
+  document.getElementById("adapter").textContent="adapter: "+(m.adapter||"-")+" · realDevices: "+String(m.realDevices);
+  var lat=m.latencyMs||{};
+  var stats=[["round trips",m.roundTrips||0],["tools",m.tools||0],["protocol",m.protocolVersion||"-"],["latency p50",(lat.p50||0)+" ms"],["latency max",(lat.max||0)+" ms"],["decisions",(m.decisions||[]).length]];
+  document.getElementById("stats").innerHTML=stats.map(function(x){return "<div class=\"stat\"><div class=\"k\">"+x[0]+"</div><div class=\"v\">"+x[1]+"</div></div>";}).join("");
+  var ds=m.decisions||[];
+  document.getElementById("dc").textContent=ds.length+" rows";
+  document.getElementById("decisions").innerHTML=ds.map(function(d){
+    var acts=(d.actions||[]).map(function(a){return "<div class=\""+(a.ok?"ok":"fail")+"\">"+(a.ok?"ok":"fail")+" · "+a.deviceId+" · "+a.action+"</div>";}).join("")||"<div style=\"color:#84a3ad\">no device action</div>";
+    return "<tr><td><div class=\"rule\">"+d.rule+"</div><div style=\"color:#84a3ad;font-size:10.5px\">"+d.reason+"</div></td><td>"+acts+"</td></tr>";
+  }).join("")||"<tr><td>no decisions</td></tr>";
+  document.getElementById("rpc").innerHTML=s.map(function(r){
+    return "<tr><td>"+r.id+"</td><td>"+r.method.replace("tools/call","<span class=\"rule\">tools/call</span>")+"</td><td>"+r.status+"</td><td>"+r.durationMs+" ms</td></tr>";
+  }).join("")||"<tr><td colspan=\"4\">no session</td></tr>";
+  document.getElementById("scope").innerHTML="<b>Scope:</b> the MCP transport, rule evaluation and action dispatch are real and tested. The device itself is the local contract adapter - Alexa+, Ring and Bee have no public developer API to call.";
+}
+boot();
+</script>
 </body>
 </html>

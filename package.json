@@ -1,28 +1,27 @@
 {
   "name": "alexa-mcp-living-room-agent",
-  "version": "1.0.0",
-  "description": "Amazon Alexa+ Self-Hosted MCP Server (Spec 2025-11-25 Streamable HTTP) & Living Room Multi-Device Orchestration Agent",
+  "version": "2.0.0",
+  "description": "MCP server for living-room device orchestration (Streamable HTTP)",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/index.js",
     "test": "node --test tests/*.test.js"
   },
   "keywords": [
-    "alexa-plus",
     "mcp",
-    "model-context-protocol",
-    "amazon-devices",
-    "fire-tv",
-    "ring",
-    "bee-wearable",
-    "devpost",
+    "alexa-plus",
+    "orchestration",
     "smart-home"
   ],
   "author": "Tingqiu Liu <tianqi689@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

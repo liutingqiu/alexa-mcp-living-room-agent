@@ -1,155 +1,183 @@
-export const ALEXA_MCP_TOOLS = [
+/**
+ * MCP server over Streamable HTTP (single endpoint, JSON-RPC 2.0 body, JSON or
+ * SSE response). Implements initialize, tools/list, tools/call and ping.
+ *
+ * Nothing here fabricates device data: every tool call goes through the
+ * orchestrator into a DeviceAdapter, and the adapter reports whether it is a
+ * real vendor API or the local contract stand-in.
+ */
+import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
+import { Orchestrator } from "../orchestrator.js";
+export const SERVER_INFO = { name: "alexa-plus-living-room", version: "2.0.0" };
+export const TOOLS = [
     {
-        name: 'ring_get_doorbell_feed',
-        description: 'Fetches real-time video snapshot and motion telemetry from Ring Doorbell.',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                doorbellId: { type: 'string', description: 'Unique identifier for Ring device' }
-            },
-            required: ['doorbellId']
-        }
+        name: "ring_get_doorbell_feed",
+        description: "Return the current state of a doorbell device from the active adapter.",
+        inputSchema: { type: "object", properties: { deviceId: { type: "string" } }, required: ["deviceId"] },
     },
     {
-        name: 'firetv_display_heads_up_alert',
-        description: 'Overlays a picture-in-picture notification or pauses media on Fire TV.',
+        name: "firetv_display_heads_up_alert",
+        description: "Send a picture-in-picture alert command to a Fire TV device.",
         inputSchema: {
-            type: 'object',
-            properties: {
-                alertTitle: { type: 'string' },
-                message: { type: 'string' },
-                pipVideoUrl: { type: 'string' },
-                pauseCurrentMedia: { type: 'boolean' }
-            },
-            required: ['alertTitle', 'message']
-        }
+            type: "object",
+            properties: { deviceId: { type: "string" }, title: { type: "string" }, message: { type: "string" } },
+            required: ["deviceId", "title", "message"],
+        },
     },
     {
-        name: 'bee_wearable_get_biometrics',
-        description: 'Reads heart rate, HRV, and stress telemetry from user Bee AI wearable.',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                wearableId: { type: 'string' }
-            },
-            required: ['wearableId']
-        }
+        name: "bee_wearable_get_biometrics",
+        description: "Read biometric telemetry for a wearable device.",
+        inputSchema: { type: "object", properties: { deviceId: { type: "string" } }, required: ["deviceId"] },
     },
     {
-        name: 'alexa_set_ambient_lighting',
-        description: 'Adjusts connected smart home ambient lighting color and brightness.',
+        name: "living_room_scene_apply",
+        description: "Run one device event through the orchestrator and return the decision and actions.",
         inputSchema: {
-            type: 'object',
+            type: "object",
             properties: {
-                colorHex: { type: 'string' },
-                brightnessPct: { type: 'number' }
+                deviceId: { type: "string" },
+                kind: { type: "string", enum: ["motion", "doorbell", "biometric", "media"] },
+                payload: { type: "object" },
             },
-            required: ['colorHex', 'brightnessPct']
-        }
-    }
+            required: ["deviceId", "kind"],
+        },
+    },
+    {
+        name: "server_capabilities",
+        description: "Report adapter name and whether it targets real vendor devices.",
+        inputSchema: { type: "object", properties: {} },
+    },
 ];
-export class AlexaStreamableMCPServer {
-    serverVersion = '2025-11-25'; // Spec 2025-11-25 Streamable HTTP
-    sceneState;
-    constructor() {
-        this.sceneState = {
-            sceneId: 'living_room_01',
-            fireTvStatus: 'PLAYING_MOVIE',
-            ringAlertActive: false,
-            userStressLevel: 'NORMAL',
-            activeLightingAmbientHex: '#FFAA44',
-            lastOrchestrationTrace: 'System initialized. All 4 devices connected.'
-        };
+export class LivingRoomMcpServer {
+    adapter;
+    orchestrator;
+    constructor(adapter) {
+        this.adapter = adapter;
+        this.orchestrator = new Orchestrator(adapter);
     }
-    getSceneState() {
-        return { ...this.sceneState };
-    }
-    /**
-     * Dispatches incoming JSON-RPC 2.0 Streamable HTTP calls from Alexa+.
-     */
-    async handleMCPRequest(request) {
-        if (request.method === 'tools/list') {
-            return {
-                jsonrpc: '2.0',
-                id: request.id,
-                result: {
-                    tools: ALEXA_MCP_TOOLS,
-                    protocolVersion: this.serverVersion
-                }
-            };
-        }
-        if (request.method === 'tools/call') {
-            const toolName = request.params?.name;
-            const args = request.params?.arguments ?? {};
-            const result = await this.executeTool(toolName, args);
-            return {
-                jsonrpc: '2.0',
-                id: request.id,
-                result
-            };
-        }
-        return {
-            jsonrpc: '2.0',
-            id: request.id,
-            error: {
-                code: -32601,
-                message: `Method not found: ${request.method}`
-            }
-        };
-    }
-    /**
-     * Autonomous cross-device orchestration logic:
-     * When Ring detects motion at the door while Fire TV is playing:
-     * - Pauses Fire TV media
-     * - Shows PiP camera feed on TV
-     * - Reads Bee Wearable user stress
-     * - Dims ambient lighting to assist focus
-     */
-    async processDeviceEvent(event) {
-        if (event.sourceDevice === 'RING_DOORBELL' && event.eventType === 'MOTION_DETECTED') {
-            this.sceneState.ringAlertActive = true;
-            this.sceneState.fireTvStatus = 'PAUSED_ALERT';
-            this.sceneState.activeLightingAmbientHex = '#38BDF8'; // Alert blue
-            this.sceneState.lastOrchestrationTrace = `[Ring Motion Detected] Paused Fire TV movie playback. Overlaying visitor feed on screen.`;
-        }
-        if (event.sourceDevice === 'BEE_WEARABLE' && event.eventType === 'HEART_RATE_SPIKE') {
-            this.sceneState.userStressLevel = 'ELEVATED';
-            this.sceneState.activeLightingAmbientHex = '#14F195'; // Soothing green
-            this.sceneState.lastOrchestrationTrace = `[Bee AI Wearable] Detected elevated stress (${event.payload.bpm} BPM). Softened ambient lighting to soothing calm mode.`;
-        }
-        return { ...this.sceneState };
-    }
-    async executeTool(name, args) {
+    async callTool(name, args) {
         switch (name) {
-            case 'ring_get_doorbell_feed':
-                return {
-                    doorbellId: args.doorbellId,
-                    status: 'ONLINE',
-                    liveFeedUrl: 'https://ring.amazon.com/live/feed_front_door.m3u8',
-                    recentMotion: true
+            case "ring_get_doorbell_feed":
+            case "bee_wearable_get_biometrics":
+                return this.adapter.snapshot(String(args.deviceId ?? ""));
+            case "firetv_display_heads_up_alert":
+                return this.adapter.command(String(args.deviceId ?? ""), "show_pip", {
+                    title: String(args.title ?? ""),
+                    message: String(args.message ?? ""),
+                });
+            case "living_room_scene_apply": {
+                const event = {
+                    deviceId: String(args.deviceId ?? ""),
+                    kind: String(args.kind ?? "motion"),
+                    at: Date.now(),
+                    payload: args.payload ?? {},
                 };
-            case 'firetv_display_heads_up_alert':
-                this.sceneState.fireTvStatus = args.pauseCurrentMedia ? 'PAUSED_ALERT' : 'PLAYING_MOVIE';
-                return {
-                    success: true,
-                    displayOverlayRendered: true,
-                    mediaState: this.sceneState.fireTvStatus
-                };
-            case 'bee_wearable_get_biometrics':
-                return {
-                    wearableId: args.wearableId,
-                    heartRateBPM: 74,
-                    hrvMs: 65,
-                    batteryPct: 92
-                };
-            case 'alexa_set_ambient_lighting':
-                this.sceneState.activeLightingAmbientHex = args.colorHex || '#FFFFFF';
-                return {
-                    success: true,
-                    currentColor: this.sceneState.activeLightingAmbientHex
-                };
+                return this.orchestrator.handle(event);
+            }
+            case "server_capabilities":
+                return { adapter: this.adapter.name, realDevices: this.adapter.realDevices };
             default:
-                throw new Error(`Unknown MCP Tool: ${name}`);
+                throw new Error("unknown tool: " + name);
         }
+    }
+    async handle(request) {
+        const { method, params } = request;
+        const id = request.id ?? null;
+        const respond = (result) => ({ jsonrpc: "2.0", id, result });
+        if (method === "initialize") {
+            return respond({
+                protocolVersion: "2025-06-18",
+                serverInfo: SERVER_INFO,
+                capabilities: { tools: { listChanged: false } },
+                instructions: "Living room orchestration tools. Device adapter: " + this.adapter.name,
+            });
+        }
+        if (method === "notifications/initialized" || method.startsWith("notifications/")) {
+            return null;
+        }
+        if (method === "ping")
+            return respond({});
+        if (method === "tools/list")
+            return respond({ tools: TOOLS });
+        if (method === "tools/call") {
+            const name = String(params?.name ?? "");
+            const args = params?.arguments ?? {};
+            try {
+                const result = await this.callTool(name, args);
+                return respond({ content: [{ type: "text", text: JSON.stringify(result) }], isError: false });
+            }
+            catch (error) {
+                return respond({
+                    content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }],
+                    isError: true,
+                });
+            }
+        }
+        return { jsonrpc: "2.0", id, error: { code: -32601, message: "method not found: " + method } };
+    }
+    listen(port) {
+        const server = createServer((req, res) => this.route(req, res));
+        return new Promise((resolve) => {
+            server.listen(port, "127.0.0.1", () => {
+                const address = server.address();
+                const boundPort = typeof address === "object" && address ? address.port : port;
+                resolve({
+                    port: boundPort,
+                    close: () => new Promise((done) => server.close(() => done())),
+                });
+            });
+        });
+    }
+    async route(req, res) {
+        if (req.url === "/health") {
+            res.writeHead(200, { "content-type": "application/json" });
+            res.end(JSON.stringify({ ok: true, adapter: this.adapter.name, realDevices: this.adapter.realDevices }));
+            return;
+        }
+        if (req.url !== "/mcp") {
+            res.writeHead(404, { "content-type": "application/json" });
+            res.end(JSON.stringify({ error: "not_found" }));
+            return;
+        }
+        if (req.method !== "POST") {
+            res.writeHead(405, { "content-type": "application/json" });
+            res.end(JSON.stringify({ error: "method_not_allowed", hint: "POST JSON-RPC to /mcp" }));
+            return;
+        }
+        const chunks = [];
+        for await (const chunk of req)
+            chunks.push(chunk);
+        let payload;
+        try {
+            payload = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        }
+        catch {
+            res.writeHead(400, { "content-type": "application/json" });
+            res.end(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "parse error" } }));
+            return;
+        }
+        const batch = Array.isArray(payload) ? payload : [payload];
+        const responses = [];
+        for (const item of batch) {
+            const result = await this.handle(item);
+            if (result)
+                responses.push(result);
+        }
+        const accept = String(req.headers.accept ?? "");
+        if (accept.includes("text/event-stream")) {
+            res.writeHead(200, {
+                "content-type": "text/event-stream",
+                "cache-control": "no-cache",
+                connection: "keep-alive",
+                "mcp-session-id": randomUUID(),
+            });
+            for (const body of responses)
+                res.write("event: message\ndata: " + JSON.stringify(body) + "\n\n");
+            res.end();
+            return;
+        }
+        res.writeHead(200, { "content-type": "application/json", "mcp-session-id": randomUUID() });
+        res.end(JSON.stringify(Array.isArray(payload) ? responses : responses[0] ?? {}));
     }
 }
